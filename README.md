@@ -9,3 +9,4 @@ I'm also writing my bachelor thesis right now, so I'm not sure if I'll do all th
 
 | Day                                       | Name        | Status |
 | ----------------------------------------- | ----------- | ------ |
+| [01](https://adventofcode.com/2021/day/1) | Sonar Sweep |  ⭐⭐  |
