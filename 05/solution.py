@@ -34,9 +34,9 @@ def get_counts_of_overlapping_points(points: list) -> int:
 
 
 global_points = []
-_ = [list(map(global_points.append, x)) for x in [get_points(line) for line in lines]]
+for x in  [get_points(line) for line in lines]: global_points.extend(x)
 print(f"Answer 1: {get_counts_of_overlapping_points(global_points)}")
 
 global_points = []
-_ = [list(map(global_points.append, x)) for x in [get_points(line, only_horizontal=False) for line in lines]]
+for x in  [get_points(line, only_horizontal=False) for line in lines]: global_points.extend(x)
 print(f"Answer 2: {get_counts_of_overlapping_points(global_points)}")
