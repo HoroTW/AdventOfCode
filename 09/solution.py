@@ -15,3 +15,8 @@ mask: np.ndarray = generic_filter(
     cval=9,
 )
 print("Answer 1:", ((map2d + 1) * mask).sum())
+
+# label function that labels anything that is not 0 with a unique number standard patter in `+`
+areas, _ = label((map2d < 9).astype(int))
+_, counts = np.unique(areas, return_counts=True)
+print("Answer 2:", np.sort(counts[1:])[-3:].prod())
