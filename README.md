@@ -1,5 +1,9 @@
 # 🎄 Advent of Code 2021 🎄
 
+![](https://img.shields.io/badge/day%20📅-2-blue)
+![](https://img.shields.io/badge/stars%20⭐-4-yellow)
+![](https://img.shields.io/badge/days%20completed-2-red)
+
 ## Summary
 
 This year I will post my solutions to the [Advent of code](https://adventofcode.com/), even though I think they are nothing special.
