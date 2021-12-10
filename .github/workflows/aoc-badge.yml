@@ -20,5 +20,5 @@ jobs:
 
       - uses: stefanzweifel/git-auto-commit-action@v4 # Step that pushes these local changes back to your github repo
         with:
-          commit_message: Update badges
+          commit_message: "🏅 Badges Update"
           file_pattern: README.md
