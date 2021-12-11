@@ -1,3 +1,4 @@
+# %%
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import generic_filter
@@ -13,8 +14,9 @@ def apply_adj(arr: np.ndarray):
 
 
 count = 0
-total_steps = 100
+total_steps = 500
 first_sync = True
+n = 0
 
 for step in range(total_steps):
     if np.count_nonzero(grid == 0) == 100 and first_sync:
@@ -22,6 +24,10 @@ for step in range(total_steps):
         first_sync = False
     grid += 1
     while True:
+        tmp = grid.copy()
+        tmp[tmp == -1] = 10
+        plt.imsave(f"out/output{n:05}.png", tmp, cmap="hot", vmin=0, vmax=10)
+        n += 1
         flashers = grid > 9
         after_adj_flashers = generic_filter(grid, apply_adj, size=3, mode="constant")
         after_adj_flashers[flashers] = -1
