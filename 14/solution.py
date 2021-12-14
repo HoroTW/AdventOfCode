@@ -34,7 +34,6 @@ class NodeIterator:
 head = None
 rules = {}
 
-
 with open("input.txt", encoding="ASCII") as f:
     first_line = f.readline().rstrip()
 
@@ -50,8 +49,6 @@ with open("input.txt", encoding="ASCII") as f:
         search, _chr = line.split(" -> ")
         rules[search] = _chr
 
-# %%
-
 for _ in range(5):
     cur = head
 
@@ -66,6 +63,4 @@ for _ in range(5):
 
 
 counts = sorted(Counter(head).values())
-
-
 print("Answer 1:", counts[-1] - counts[0])
