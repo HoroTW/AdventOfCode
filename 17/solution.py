@@ -21,7 +21,7 @@ def max_height(y):
 
 test_target = 20, 30, -10, -5
 input_target = 143, 177, -106, -71
-s_range = 1500
+s_range = 1000
 target = input_target
 velocities = []
 
