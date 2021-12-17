@@ -15,8 +15,8 @@ def target_is_hit(sx, sy, target, mpos=(0, 0)):
     return False
 
 
-def max_height(y):
-    return (y + 1) * y // 2
+def max_height(y_vel):
+    return (y_vel + 1) * y_vel // 2
 
 
 test_target = 20, 30, -10, -5
@@ -25,10 +25,10 @@ s_range = 1000
 target = input_target
 velocities = []
 
-for sx, sy in product(range(s_range), range(-s_range, s_range)):
-    if target_is_hit(sx, sy, target):
-        print(sy)
-        velocities.append(sy)
+for sx_vel, sy_vel in product(range(s_range), range(-s_range, s_range)):
+    if target_is_hit(sx_vel, sy_vel, target):
+        print(sy_vel)
+        velocities.append(sy_vel)
 
 max_y_velocity = max(velocities)
 print("Answer 1:", max_height(max_y_velocity), "with  max_y_velocity", max_y_velocity)
