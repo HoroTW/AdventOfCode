@@ -30,3 +30,4 @@ I'm also writing my bachelor thesis right now, so I'm not sure if I'll do all th
 | [15](https://adventofcode.com/2021/day/15) | Chiton                   |  ⭐⭐  | With the networkx library it was doable in just a few lines of code - but the docu of networkx could be "more verbose" 😄 |
 | [16](https://adventofcode.com/2021/day/16) | Packet Decoder           |  ⭐⭐  | That was fun but it was also the challenge that took the most time ^^ so many small silly bugs 🙈 |
 | [17](https://adventofcode.com/2021/day/17) | Trick Shot               |  ⭐⭐  | I'm not really proud of the solution because I brute forced instead of using the superposition principle .... but hey I found the solution and it only took me a few minutes 🤣 (code executes in a second or two) |
+| [20](https://adventofcode.com/2021/day/20) |  Trench Map   |  ⭐⭐  | The generic filter does it all ^^ |
