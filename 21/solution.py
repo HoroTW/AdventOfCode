@@ -1,6 +1,6 @@
 # %%
 from itertools import cycle, product
-from functools import lru_cache
+from functools import lru_cache, reduce
 
 PLAYER1, PLAYER2 = 0, 1
 
@@ -43,7 +43,6 @@ print("Answer 1", min(player_scores) * rolls)
 
 # A function should return the number of wins for each player
 
-
 # ALL_POSSIBLE_DICE_SUMS = list(map(sum, product([1, 2, 3], repeat=3)))
 # ALL_POSSIBLE_DICE_SUMS = list(map(sum, product(range(1, 4), repeat=3)))
 # ALL_POSSIBLE_DICE_SUMS = list(map(sum, product([1, 2, 3], [1, 2, 3], [1, 2, 3])))
@@ -58,9 +57,15 @@ print("Answer 1", min(player_scores) * rolls)
 ALL_POSSIBLE_DICE_SUMS = tuple(map(sum, product([1, 2, 3], repeat=3)))
 
 
-# The magic cache xD - it's just a dictionary that stores the results of the function to reuse it
-@lru_cache(maxsize=None)
+FUNC_DICT = {}
+HIT_MISS_COUNT = [0, 0]
+
 def dim_play(positions, scores, player_id):
+    if (positions, scores, player_id) in FUNC_DICT:
+        HIT_MISS_COUNT[0] += 1
+        return FUNC_DICT[(positions, scores, player_id)]
+    HIT_MISS_COUNT[1] += 1
+
     if scores[PLAYER1] >= 21:  # base cases
         return (1, 0)  # one win for PLAYER1
     if scores[PLAYER2] >= 21:
@@ -81,8 +86,14 @@ def dim_play(positions, scores, player_id):
         # Update the wins for the players:
         wins = [wins[PLAYER1] + it_p1_w, wins[PLAYER2] + it_p2_w]
 
+    FUNC_DICT[(positions, scores, player_id)] = wins
     return wins
 
 
 wins = dim_play((4, 10), (0, 0), PLAYER1)
 print("Answer 2:", max(wins))
+print()
+print(f"Hit count: {HIT_MISS_COUNT[0]} Miss count: {HIT_MISS_COUNT[1]}")
+print(f"Hit rate: {HIT_MISS_COUNT[0] / (HIT_MISS_COUNT[0] + HIT_MISS_COUNT[1]) * 100 :0.2f}%")
+print(f"Entrys in the function call dictionary: {len(FUNC_DICT)}")
+print(f"Games that were cached by using dynamic programming {sum(map(sum, FUNC_DICT.values()))}")
