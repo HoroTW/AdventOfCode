@@ -47,14 +47,16 @@ def solve(limits: list, start_number_as_list: list, increment: int):
             if z > limits[block]:
                 n[block] = n[block] + increment
                 break
-        else:
+        else: # no break
             print("found fitting number in", counter, "steps")
             return "".join(map(str, n))
 
 
 limits = [81, 2081, 54106, 2080, 79, 2054, 78, 2, 28, 728, 27, 702, 26, 0]
 start_list9, start_list1 = list(map(int, "9" * 14)), list(map(int, "1" * 14))
+sl9 = start_list9.copy()
+sl1 = start_list1.copy()
 print("Answer 1:", solve(limits, start_list9, increment=-1))
 print("Answer 2:", solve(limits, start_list1, increment=1))
-print(timeit.timeit(solve(limits, start_list9, increment=-1), number=10000) / 10000 * 10 ** 9, "ns")
-print(timeit.timeit(solve(limits, start_list1, increment=1), number=10000) / 10000 * 10 ** 9, "ns")
+print(timeit.timeit(solve(limits, sl9.copy(), increment=-1), number=10000) / 10000 * 10 ** 9, "ns")
+print(timeit.timeit(solve(limits, sl1.copy(), increment=1), number=10000) / 10000 * 10 ** 9, "ns")
