@@ -1,0 +1,329 @@
+inp w      # [1-9]
+
+mul x 0
+add x z
+mod x 26
+div z 1    # [1, 1, 1,    26, 26,   1,  26, 26, 1, 1,    26, 1,   26, 26]
+add x 12   # [12, 13, 13, -2, -10, 13, -14, -5, 15, 15, -14, 10, -14, -5]
+eql x w
+eql x 0  # for v1 == 1 x := 1
+mul y 0
+add y 25
+mul y x
+add y 1  # y = 26
+mul z y  # z = z * 26
+mul y 0
+add y w  # y = w
+add y 7   # [7, 8, 10, 4, 4, 6, 11, 13, 1, 8, 4, 13, 4, 14]
+             _  _  __        _          _  _     __ 
+mul y x
+add z y
+
+first formula for half of all cases:
+z = 26z + 7[v_3] + w  , if v_1 == 1 and v_2 >= 10 (which is always the case)
+
+# in the first 3 steps:
+
+z = 26*z + v_3 + 9
+z = 26z + 7 + w = 7 + [1-9] = [8-16]
+z = 26z + 8 + w = 26*[8-16] + [9-17]
+z = 26z + 10 + w= 26*[217-433] + [11-19] = [5653-11277]
+
+
+
+
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 13
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 8
+mul y x
+add z y
+
+
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 13
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 10
+mul y x
+add z y
+
+
+inp w
+mul x 0  #
+add x z  #  
+mod x 26 #       x = z % 26
+div z 26 # v_1 # z = z/26
+add x -2 # v_2 # x = (z % 26) -2
+eql x w  # possible                   # can I control this? yes x has to be == w             
+eql x 0  # possible --> x = [0,1]
+mul y 0   #
+add y 25  #
+mul y x   # 
+add y 1   # y = [1, 26]
+mul z y   # z = z/26*[1,26]
+mul y 0   # 
+add y w   # 
+add y 4 # v_3 # y = w+4
+mul y x  # y = (w+4)*[0,1]
+add z y  # z = z/26*[1,26] +  (w+4)*[0,1]
+         # z = z/26*[1,26] +  [5-13]*[0,1]   #            0|[5-13]
+         # since we wan't z to stay low we should watch out if z will explode ... we can at maximum lower z about 7*26=182 units 
+
+
+
+
+
+inp w# x und y werden resetet
+
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -10
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 4
+mul y x
+add z y  # z < 26*[upper_limit + 1]
+
+
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 13
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 6
+mul y x
+add z y
+
+
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -14
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 11
+mul y x
+add z y # z < 26*[upper_limit + 1]
+
+
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -5
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 13
+mul y x
+add z y  # z < 26*[upper_limit + 1]
+
+
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 15
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 1
+mul y x
+add z y
+
+
+inp w
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 15
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 8
+mul y x
+add z y
+
+
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -14
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 4
+mul y x
+add z y # z < 26*[upper_limit + 1]
+
+
+inp w 
+mul x 0
+add x z
+mod x 26
+div z 1
+add x 10
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 13
+mul y x
+add z y  # z <= 702
+
+
+inp w
+mul x 0
+add x z
+mod x 26
+div z 26
+add x -14
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 4
+mul y x
+add z y # z <= 26
+
+
+
+inp w    # (last case w = x = z % 26 -5 ) da w nur [1-9] seien kann -> das z 6-14 oder  32-40 oder .... 26*n+[6-14] seien muss
+mul x 0  #                                                                                              ausserdem muss z < 26 sein -> z muss insgesamt in der range [6, 14] sein
+add x z                                                                                                                z < 26*[upper_limit + 1] => z < 26*1
+mod x 26                                                                                                               ============================================   das ist nicht optimal aber gut genung... hoffentlich
+div z 26
+add x -5
+eql x w
+eql x 0
+mul y 0
+add y 25
+mul y x
+add y 1
+mul z y
+mul y 0
+add y w
+add y 14
+mul y x # y = (w+14)*[0,1]
+add z y # z = 0
+
+
+ # z = z/26*[1,26] +  [5-13]*[0,1] 
+
+if v_1 == 26:
+
+    x = z % 26 + v_2 (which is always a negative variable)
+    if (w == x):
+        z = z//26
+    else:
+        z = (z//26) * 26 + (w+v_3)
+else: # v_1 == 1
+
+ # erkenntniss:
+ # a) wir brauchen den fall für den der summenteil + ...*0 ist... daraus folgen constraints für w welche aber auch von dem bisherigem z abhängen
+ # b) z muss vorher < 26
+
+
+ z range finden  # 0
+
+ # conclusions:
+ # we can calculate the required z value backwards
+ # since I wanted it easy for my self I just focused on the upper limit of z
+ # 
+ # z_old < 26*[z_new_upper_limit + 1] , for code blocks where v_1 is 26
+ #
+ # z_old = z_new / 26 , for code blocks where v_1 is 1
+ # here I ignore the effects of v_3 and the lower_limit of w since 
+ # so the formula `z_old = (z_new - v_3 - 1) / 26` can be simplified to  `z_old = z_new_upper_limit / 26`
+ # this means checking a few unnecessary numbers - but I don't care (avg of 7ns to find the answer ^^)
