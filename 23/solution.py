@@ -29,11 +29,14 @@
 #        to the occupacion status of the next node and clears it's
 #        own occupacion status and returns the cost of the move
 
+import time
 from icecream import ic
 from dataclasses import dataclass
-from typing import List, Tuple
-from functools import lru_cache
+from typing import Tuple
+from functools import cache, lru_cache
+from math import inf
 import copy
+import cProfile
 
 ic("")
 
@@ -108,6 +111,17 @@ class Node:
     def __repr__(self):
         return f"name: {self.name}, occupation: {self.occupation}, \tedges: {self.edges}"
 
+    def __hash__(self):
+        return hash((self.name, self.occupation))
+
+    def __eq__(self, __o: object) -> bool:
+        return self.occupation == __o.occupation and self.name == __o.name
+
+    def __ne__(self, other):
+        # Not strictly necessary, but to avoid having both x==y and x!=y
+        # True at the same time
+        return not (self == other)
+
 
 def check_win(game_map: list[Node]):
     for node in game_map:
@@ -152,8 +166,13 @@ A4.connect(H2, 2) ; A4.connect(H3, 2) ; B4.connect(H3, 2) ; B4.connect(H4, 2) ; 
 # A2.occupy("D") ; B2.occupy("B") ; C2.occupy("A") ; D2.occupy("C")
 # A1.occupy("D") ; B1.occupy("A") ; C1.occupy("B") ; D1.occupy("A")
 
+
+# A4.occupy("A") ; B4.occupy("C") ; C4.occupy("B") ; D4.occupy("D")
+# A3.occupy("A") ; B3.occupy("B") ; C3.occupy("C") ; D3.occupy("D")
+
 A4.occupy("B") ; B4.occupy("C") ; C4.occupy("B") ; D4.occupy("D")
 A3.occupy("A") ; B3.occupy("D") ; C3.occupy("C") ; D3.occupy("A")
+
 # A2.occupy("A") ; B2.occupy("B") ; C2.occupy("C") ; D2.occupy("D")
 # A1.occupy("A") ; B1.occupy("B") ; C1.occupy("C") ; D1.occupy("D")
 
@@ -248,83 +267,26 @@ def print_map(game_map: list[Node]):
         if node.type == "D":
             Dh.append(node.get_occupier_type())
 
-    # print(
-    #     f"{'#'* 13}\n"
-    #     f"#{Hh[0]}{Hh[1]} {Hh[2]} {Hh[3]} {Hh[4]} {Hh[5]}{Hh[6]}#\n"
-    #     f"###{Ah[3]}#{Bh[3]}#{Ch[3]}#{Dh[3]}###\n"
-    #     f"  #{Ah[2]}#{Bh[2]}#{Ch[2]}#{Dh[2]}#  \n"
-    #     f"  #{Ah[1]}#{Bh[1]}#{Ch[1]}#{Dh[1]}#  \n"
-    #     f"  #{Ah[0]}#{Bh[0]}#{Ch[0]}#{Dh[0]}#  \n"
-    #     f"  {'#'*9}  \n"
-    # )
-
-    print(
-        f"{'#'* 13}\n"
-        f"#{Hh[0]}{Hh[1]} {Hh[2]} {Hh[3]} {Hh[4]} {Hh[5]}{Hh[6]}#\n"
-        f"###{Ah[1]}#{Bh[1]}#{Ch[1]}#{Dh[1]}###\n"
-        f"  #{Ah[0]}#{Bh[0]}#{Ch[0]}#{Dh[0]}#  \n"
-        f"  {'#'*9}  \n"
-    )
-
-
-# %% Test get_connected_nodes_of_same_type
-assert set(get_connected_nodes_of_same_type(A1)) == {A1, A2, A3, A4}
-assert set(get_connected_nodes_of_same_type(A2)) == {A1, A2, A3, A4}
-assert set(get_connected_nodes_of_same_type(A3)) == {A1, A2, A3, A4}
-assert set(get_connected_nodes_of_same_type(A4)) == {A1, A2, A3, A4}
-
-assert set(get_connected_nodes_of_same_type(B1)) == {B1, B2, B3, B4}
-assert set(get_connected_nodes_of_same_type(B2)) == {B1, B2, B3, B4}
-assert set(get_connected_nodes_of_same_type(B3)) == {B1, B2, B3, B4}
-assert set(get_connected_nodes_of_same_type(B4)) == {B1, B2, B3, B4}
-
-assert set(get_connected_nodes_of_same_type(C1)) == {C1, C2, C3, C4}
-assert set(get_connected_nodes_of_same_type(C2)) == {C1, C2, C3, C4}
-assert set(get_connected_nodes_of_same_type(C3)) == {C1, C2, C3, C4}
-assert set(get_connected_nodes_of_same_type(C4)) == {C1, C2, C3, C4}
-
-assert set(get_connected_nodes_of_same_type(D1)) == {D1, D2, D3, D4}
-assert set(get_connected_nodes_of_same_type(D2)) == {D1, D2, D3, D4}
-assert set(get_connected_nodes_of_same_type(D3)) == {D1, D2, D3, D4}
-assert set(get_connected_nodes_of_same_type(D4)) == {D1, D2, D3, D4}
-
-assert set(get_connected_nodes_of_same_type(H1)) == {H1, H2, H3, H4, H5, H6, H7}
-assert set(get_connected_nodes_of_same_type(H2)) == {H1, H2, H3, H4, H5, H6, H7}
-assert set(get_connected_nodes_of_same_type(H3)) == {H1, H2, H3, H4, H5, H6, H7}
-assert set(get_connected_nodes_of_same_type(H4)) == {H1, H2, H3, H4, H5, H6, H7}
-assert set(get_connected_nodes_of_same_type(H5)) == {H1, H2, H3, H4, H5, H6, H7}
-assert set(get_connected_nodes_of_same_type(H6)) == {H1, H2, H3, H4, H5, H6, H7}
-assert set(get_connected_nodes_of_same_type(H7)) == {H1, H2, H3, H4, H5, H6, H7}
+    if len(Ah) == 4:  # big game map
+        print(
+            f"{'#'* 13}\n"
+            f"#{Hh[0]}{Hh[1]} {Hh[2]} {Hh[3]} {Hh[4]} {Hh[5]}{Hh[6]}#\n"
+            f"###{Ah[3]}#{Bh[3]}#{Ch[3]}#{Dh[3]}###\n"
+            f"  #{Ah[2]}#{Bh[2]}#{Ch[2]}#{Dh[2]}#  \n"
+            f"  #{Ah[1]}#{Bh[1]}#{Ch[1]}#{Dh[1]}#  \n"
+            f"  #{Ah[0]}#{Bh[0]}#{Ch[0]}#{Dh[0]}#  \n"
+            f"  {'#'*9}  \n"
+        )
+    elif len(Ah) == 2:  # small game map
+        print(
+            f"{'#'* 13}\n"
+            f"#{Hh[0]}{Hh[1]} {Hh[2]} {Hh[3]} {Hh[4]} {Hh[5]}{Hh[6]}#\n"
+            f"###{Ah[1]}#{Bh[1]}#{Ch[1]}#{Dh[1]}###\n"
+            f"  #{Ah[0]}#{Bh[0]}#{Ch[0]}#{Dh[0]}#  \n"
+            f"  {'#'*9}  \n"
+        )
 
 
-# Test is_won (also uses connect and disconnect... :/ )
-temp_home = [Node("X1"), Node("X2"), Node("X3"), Node("X4")]
-temp_home[0].connect(temp_home[1], 1)
-temp_home[1].connect(temp_home[2], 1)
-temp_home[2].connect(temp_home[3], 1)
-temp_home[2].connect(H2, 2)
-assert is_won([H1, H2, H3, H4, H5, H6, H7, temp_home[2]]) is True
-temp_home[2].disconnect(H2)
-
-assert Edge(temp_home[2], H2) not in H2.edges
-
-# Test is_hallway_clear
-temp_hallway = [Node("H1"), Node("H2"), Node("H3"), Node("H4")]
-temp_hallway[0].connect(temp_hallway[1], 1)
-temp_hallway[1].connect(temp_hallway[2], 1)
-temp_hallway[2].connect(temp_hallway[3], 1)
-
-assert is_hallway_clear(temp_hallway) is True
-
-# sanity checks
-# game is not allready won?
-assert is_won(game_map) is False
-
-# hallway should be clear
-assert is_hallway_clear(game_map) is True
-
-# not all homes should be clear
-assert not all(is_this_home_clear(node) for node in game_map)
 # %%
 
 # Print the map
@@ -351,10 +313,9 @@ def is_home_bellow_node_clear(node: Node):
     assert node.is_room
     siblings = get_connected_nodes_of_same_type(node)
     for sibling in siblings:
-        if sibling.order > node.order:
+        if sibling.order >= node.order:
             continue  # we only check the siblings below the current node
 
-        assert sibling.is_occupied()
         if sibling.is_filled_with_matching_type() is False:
             return False
 
@@ -506,7 +467,7 @@ def possible_moves(node: Node, game_map: list[Node]):  # returns a list of all p
 
         # 3. if room is done you can't move away from it
         #    done: if the occupaiers bellow are home and you are home too
-        if node.is_room and is_home_bellow_node_clear(node):
+        if node.is_room and node.type == node.get_occupier_type() and is_home_bellow_node_clear(node):
             continue
 
         # 4. if a lower spot in the room is free you cant move to a higher spot
@@ -538,71 +499,60 @@ print_map(game_map)
 # and the lowest cost is the Solution
 
 # %%
-# game_map_backup[1].edges[0].target.occupation
-# game_map_backup[1].edges[0].target.occupation = None
-# game_map[1].edges[0].target.occupation
 
 game_depth = 0
 
-# the move into the house does not work
 
+# dict for dynamic programming
+play_dict = {}
+cache_hit = 0
 
-def play(game_map: list[Node], cost: int = 0) -> list[Tuple[int, bool]]:
-    global game_depth
-    game_depth += 1
+# returns the min cost for the game state
+def play(game_map: Tuple[Node]):
+    global cache_hit
+    # find entry in the dict and return it's cost
+    inp_hash = hash(game_map)
+    if inp_hash in play_dict:
+        cache_hit += 1
+        return play_dict[inp_hash]
 
     if is_won(game_map):  # Base case
-        # print("Won", cost)
-        game_depth -= 1
-        return [(cost, True)]
+        return 0
+    min_cost = inf
 
-    game_map_backup = copy.deepcopy(game_map)  # TODO does this work? - It could cause problems...
-    results = []
-
-    if game_depth >= 30:
-        game_depth -= 1
-        ic("Too deep")
-        return results
-
-    # node_count = len(game_map)
     game_map_length = len(game_map)
 
-    if game_depth <= 2:
-        print_map(game_map)
-
     for i in range(game_map_length):  # for each node
-        # for node in game_map_backup:
+
         node = game_map[i]
 
         moves = possible_moves(node, game_map)  # hier kommt eine falsche referenz zurück
         for move in moves:  # for the current game_map
+            cost = move.cost * node.get_occupier_cost_multiplier()
 
             # make the move
-            # HACK to find the target in the game_map
-            target_from_game_map = next((x for x in game_map if x.name == move.target.name), None)
-            move.target = target_from_game_map
+            node.move(move.target)
 
-            node.move(target_from_game_map)
-            cost += move.cost * target_from_game_map.get_occupier_cost_multiplier()
-            results.extend(play(game_map, cost))
+            cost = cost + play(game_map)
+            if cost < min_cost:
+                min_cost = cost
+
             # undo the move (maybe really only undo the move and not the whole game)
             # so that the next move can be made on the original game_map
+            move.target.move(node)
 
-            # TODO: maybe restore costs aswell?
-            game_map = copy.deepcopy(game_map_backup)  # --> game_map ist nur nichtmehr gleich der node
-            node = game_map[i]  # damit bleibt die ref erhalten aber das C in der target node ist verschwunden
-
-    # ich will mir die moves ansehen und schauen ob die alle passen
-    # beim ersten wieder aus der recursion zurückkommen passiert etwas schlechtes
-    # da moves plötzlich nicht mehr die richtigen enthält und node.move dann auch nichtmehr die gamemap referenz
-    # hat.. (der move ändert nichts an der game_map)
-    game_depth -= 1
-    # ic("Dead end")
-    return results
+    play_dict[inp_hash] = min_cost
+    return min_cost
 
 
-results = play(game_map)
+start = time.time()
+
+# results = cProfile.run("play(tuple(game_map))", sort="tottime")
+results = play(tuple(game_map))
+
+# the deepcopys take forever
 print(results)
+print(f"cache hits: {cache_hit}")
 
 
 # # %%
