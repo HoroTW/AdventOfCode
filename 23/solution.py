@@ -1,44 +1,7 @@
-# %%
-# #############
-# #...........#
-# ###D#B#C#C###
-#   #D#C#B#A#
-#   #D#B#A#C#
-#   #D#A#B#A#
-#   #########
-
-
-# %% Indexing
-# #############
-# #01.6.3.4.56#
-# ###2#7#9#a###
-#   #3#8#d#e#
-#   #4#9#h#i#
-#   #5#a#l#m#
-#   #########
-
-
-# Idea - model the map as a graph
-#      - each node is a space on which a amphipod can stay
-#      - each edge is a connection between two nodes
-#      - each node has a list of edges
-#      - each edge has a cost (multiplier)
-#      - each node has an occupacion status which consists of a name an a cost
-#      - Connections are bidirectional
-#      - A node has a move function which puts the occupacion status of the node
-#        to the occupacion status of the next node and clears it's
-#        own occupacion status and returns the cost of the move
-
 import time
-from icecream import ic
 from dataclasses import dataclass
 from typing import Tuple
-from functools import cache, lru_cache
 from math import inf
-import copy
-import cProfile
-
-ic("")
 
 
 class Edge:
@@ -50,7 +13,6 @@ class Edge:
     def __repr__(self):
         return f"{self.source.name} -> {self.target.name}"
 
-    # equal checks for lists
     def __eq__(self, other):
         return (
             self.source == other.source
@@ -60,10 +22,9 @@ class Edge:
         )
 
 
-cost_dict = {"A": 1, "B": 10, "C": 100, "D": 1000}
-
-
 class Node:
+    __cost_dict = {"A": 1, "B": 10, "C": 100, "D": 1000}
+
     def __init__(self, name):
         self.name: str = name
         self.type: str = name[0]
@@ -73,8 +34,9 @@ class Node:
         self.is_room = self.type in ["A", "B", "C", "D"]
         self.is_hallway = self.type == "H"
         self.is_top_room = self.order == 4 and self.is_room
+        self.occupy(self.type)  # as default the map is cleared
 
-    def connect(self, node, cost):
+    def connect(self, node, cost=1):
         self.edges.append(Edge(self, node, cost))
         node.edges.append(Edge(node, self, cost))
 
@@ -83,7 +45,9 @@ class Node:
         node.edges.remove(Edge(node, self))
 
     def occupy(self, name):
-        cost = cost_dict[name]
+        if name == "H":
+            return
+        cost = self.__cost_dict[name]
         self.occupation = (name, cost)
 
     def get_occupier_type(self):
@@ -118,84 +82,62 @@ class Node:
         return self.occupation == __o.occupation and self.name == __o.name
 
     def __ne__(self, other):
-        # Not strictly necessary, but to avoid having both x==y and x!=y
-        # True at the same time
         return not (self == other)
 
 
-def check_win(game_map: list[Node]):
-    for node in game_map:
-        if node.name.startswith("H"):
-            if node.occupation is not None:
-                return False  # hallways have to be clear
-
-        roomtype = node.name[0]  # A, B, C, D
-        if node.occupation is None:
-            return False  # rooms have to be filled
-
-        occupiertype = node.occupation[0]  # A, B, C, D
-        if roomtype != occupiertype:
-            return False  # rooms have to be filled with the same type
-
-    return True  # all rooms are filled with the corresponding type
+@dataclass
+class Move:
+    origin: Node
+    target: Node
+    cost: int
 
 
 # fmt: off
-# Create Rooms
-# A1 = Node("A1") ; B1 = Node("B1") ; C1 = Node("C1") ; D1 = Node("D1")
-# A2 = Node("A2") ; B2 = Node("B2") ; C2 = Node("C2") ; D2 = Node("D2")
-A3 = Node("A3") ; B3 = Node("B3") ; C3 = Node("C3") ; D3 = Node("D3")
-A4 = Node("A4") ; B4 = Node("B4") ; C4 = Node("C4") ; D4 = Node("D4")
+def create_game_map():
+    mp = []
 
-# Create Hallways
-H1 = Node("H1") ; H2 = Node("H2") ; H3 = Node("H3") ; H4 = Node("H4") ; H5 = Node("H5") ; H6 = Node("H6") ; H7 = Node("H7")
+    # Create Rooms
+    for rti, room_type in enumerate(("A", "B", "C", "D")):
+        for room_order in range(1, 5):
+            node = Node(f"{room_type}{room_order}")
+            mp.append(node)
+            if 1 < node.order <= 4:  # [2, 4]
+                mp[rti * 4 + room_order - 2].connect(node)
 
-# Connect the Rooms themselves # 1 is the cost
-# A1.connect(A2, 1) ; B1.connect(B2, 1) ; C1.connect(C2, 1) ; D1.connect(D2, 1)
-# A2.connect(A3, 1) ; B2.connect(B3, 1) ; C2.connect(C3, 1) ; D2.connect(D3, 1)
-A3.connect(A4, 1) ; B3.connect(B4, 1) ; C3.connect(C4, 1) ; D3.connect(D4, 1)
+    #                -7          -6          -5          -4          -3          -2          -1
+    mp.extend((Node("H7"), Node("H6"), Node("H5"), Node("H4"), Node("H3"), Node("H2"), Node("H1")))
 
-# Connect the Hallways
-H1.connect(H2, 1) ; H2.connect(H3, 2) ;H3.connect(H4, 2); H4.connect(H5, 2) ;H5.connect(H6, 2); H6.connect(H7, 1)
-# Connect the Hallways to the Rooms
-A4.connect(H2, 2) ; A4.connect(H3, 2) ; B4.connect(H3, 2) ; B4.connect(H4, 2) ; C4.connect(H4, 2) ; C4.connect(H5, 2) ; D4.connect(H5, 2) ; D4.connect(H6, 2)
+    for i in range(-1, -7, -1):  # connect hallways
+        mp[i].connect(mp[i - 1])  # H1 -> H2 -> H3 -> H4 -> H5 -> H6 -> H7
 
-# fill the nodes with their occupacion status
-# A4.occupy("D") ; B4.occupy("B") ; C4.occupy("C") ; D4.occupy("C")
-# A3.occupy("D") ; B3.occupy("C") ; C3.occupy("B") ; D3.occupy("A")
-# A2.occupy("D") ; B2.occupy("B") ; C2.occupy("A") ; D2.occupy("C")
-# A1.occupy("D") ; B1.occupy("A") ; C1.occupy("B") ; D1.occupy("A")
+    # Connect the Rooms to the Hallways
+    mp[3].connect(mp[-2], 2); mp[3].connect(mp[-3], 2)
+    mp[7].connect(mp[-3], 2); mp[7].connect(mp[-4], 2)
+    mp[11].connect(mp[-4], 2); mp[11].connect(mp[-5], 2)
+    mp[15].connect(mp[-5], 2); mp[15].connect(mp[-6], 2)
 
-
-# A4.occupy("A") ; B4.occupy("C") ; C4.occupy("B") ; D4.occupy("D")
-# A3.occupy("A") ; B3.occupy("B") ; C3.occupy("C") ; D3.occupy("D")
-
-A4.occupy("B") ; B4.occupy("C") ; C4.occupy("B") ; D4.occupy("D")
-A3.occupy("A") ; B3.occupy("D") ; C3.occupy("C") ; D3.occupy("A")
-
-# A2.occupy("A") ; B2.occupy("B") ; C2.occupy("C") ; D2.occupy("D")
-# A1.occupy("A") ; B1.occupy("B") ; C1.occupy("C") ; D1.occupy("D")
-
-# A4.occupy("D") ; B4.occupy("B") ; C4.occupy("A") ; D4.occupy("C")
-# A3.occupy("D") ; B3.occupy("C") ; C3.occupy("B") ; D3.occupy("A")
-# A2.occupy("D") ; B2.occupy("B") ; C2.occupy("A") ; D2.occupy("C")
-# A1.occupy("A") ; B1.occupy("B") ; C1.occupy("C") ; D1.occupy("D")
-
+    return tuple(mp)
 # fmt: on
 
-# Add all the nodes to a list (game_map)
-# game_map = [A1, A2, A3, A4, B1, B2, B3, B4, C1, C2, C3, C4, D1, D2, D3, D4, H1, H2, H3, H4, H5, H6, H7]
-game_map = [A3, A4, B3, B4, C3, C4, D3, D4, H1, H2, H3, H4, H5, H6, H7]
 
-# for all nodes try all possible moves
-# for all possible games (all possible moves) try to find the best move
+def populate_map(input_file, mapp: Tuple[Node]):
+    with open(input_file, encoding="ASCII") as f:
+        f.readline()  # skip first line
+        f.readline()  # skip second line
 
-# to play all games
-# we need to find all moves for the current game status
-# then we save the game status and the moves
-# then we play the moves resulting in the next game statuses
-# part of the game status is the total cost
-# then we repeat the process until we have no moves left or a win is found
+        ll = list(filter(None, f.readline().strip().split("#")))
+        mapp[3].occupy(ll[0])
+        mapp[3 + 4].occupy(ll[1])
+        mapp[3 + 4 + 4].occupy(ll[2])
+        mapp[3 + 4 + 4 + 4].occupy(ll[3])
+
+        ll = list(filter(None, f.readline().strip().split("#")))
+        mapp[2].occupy(ll[0])
+        mapp[2 + 4].occupy(ll[1])
+        mapp[2 + 4 + 4].occupy(ll[2])
+        mapp[2 + 4 + 4 + 4].occupy(ll[3])
+
+    return mapp
 
 
 def get_connected_nodes_of_same_type(node: Node) -> list[Node]:
@@ -256,7 +198,6 @@ def print_map(game_map: list[Node]):
 
     for node in game_map:
         if node.type == "H":
-
             Hh.append(node.get_occupier_type())
         if node.type == "A":
             Ah.append(node.get_occupier_type())
@@ -267,42 +208,11 @@ def print_map(game_map: list[Node]):
         if node.type == "D":
             Dh.append(node.get_occupier_type())
 
-    if len(Ah) == 4:  # big game map
-        print(
-            f"{'#'* 13}\n"
-            f"#{Hh[0]}{Hh[1]} {Hh[2]} {Hh[3]} {Hh[4]} {Hh[5]}{Hh[6]}#\n"
-            f"###{Ah[3]}#{Bh[3]}#{Ch[3]}#{Dh[3]}###\n"
-            f"  #{Ah[2]}#{Bh[2]}#{Ch[2]}#{Dh[2]}#  \n"
-            f"  #{Ah[1]}#{Bh[1]}#{Ch[1]}#{Dh[1]}#  \n"
-            f"  #{Ah[0]}#{Bh[0]}#{Ch[0]}#{Dh[0]}#  \n"
-            f"  {'#'*9}  \n"
-        )
-    elif len(Ah) == 2:  # small game map
-        print(
-            f"{'#'* 13}\n"
-            f"#{Hh[0]}{Hh[1]} {Hh[2]} {Hh[3]} {Hh[4]} {Hh[5]}{Hh[6]}#\n"
-            f"###{Ah[1]}#{Bh[1]}#{Ch[1]}#{Dh[1]}###\n"
-            f"  #{Ah[0]}#{Bh[0]}#{Ch[0]}#{Dh[0]}#  \n"
-            f"  {'#'*9}  \n"
-        )
-
-
-# %%
-
-# Print the map
-print_map(game_map)
-
-# dataclass for move which is a tuple of (target_node:Node, start_node:Node)
-@dataclass
-class Move:
-    origin: Node
-    target: Node
-    cost: int
-
-
-# the game state is the current cost and the current graph with all its nodes
-# save the state as some kind of dict or something with state as key and cost as value
-# or something like that
+    print(f"{'#'* 13}\n#{Hh[0]}{Hh[1]} {Hh[2]} {Hh[3]} {Hh[4]} {Hh[5]}{Hh[6]}#")
+    print(f"###{Ah[3]}#{Bh[3]}#{Ch[3]}#{Dh[3]}###")
+    for i in range(len(Ah) - 2, -1, -1):
+        print(f"  #{Ah[i]}#{Bh[i]}#{Ch[i]}#{Dh[i]}#")
+    print(f"  {'#'*9}  \n")
 
 
 def is_home_bellow_node_clear(node: Node):
@@ -430,26 +340,20 @@ def can_move_to(origin: Node, destination: Node) -> Tuple[bool, int]:
     costs += costs_to_target
 
     if reverse_order:
-        path.reverse()  # [A1, A2, .. H3] -> [H3, A4, .. A1] # cost shoud be the same
+        path.reverse()  # [A1, A2, .. H3] -> [H3, A4, .. A1] # cost stays the same
 
     c_node = path[-1]
     assert c_node.name is destination.name, "the last node in the path should be the destination"
 
-    ###################################
-    # path complete
-    # now checking if the path is clear
-    # remove the origin since this is where we started, so it is always occupied
-    path.pop(0)  # remove the origin (we are there so it is always occupied)
+    # path complete - now checking if the path is clear
+    path.pop(0)  # remove the origin (since it should always be occupied)
     blocked = any(node.is_occupied() for node in path)
     if blocked:
         return False, costs
     return True, costs
 
 
-# TODO does the lru_cache help? - not sure if here same states are encountered
-# I think there are no same states in the game - so it should not help
-# (it should even worsen the performance) - but we should test it
-def possible_moves(node: Node, game_map: list[Node]):  # returns a list of all possible moves from a node
+def possible_moves(node: Node, game_map: list[Node]):
     moves: list[Move] = []
 
     if node.is_occupied() is False:  # here is nothing that can be moved so all of this is sensless
@@ -488,89 +392,46 @@ def possible_moves(node: Node, game_map: list[Node]):  # returns a list of all p
     return moves
 
 
-## %%
-print_map(game_map)
-
-## %%
-# find the cheapest winning game:
-# try to play for all nodes all possible moves
-# and for the resulting game state (after the move is made) repeat unitl no moves are possible
-# for the games that result in a winning state we can save the cost
-# and the lowest cost is the Solution
-
-# %%
-
-game_depth = 0
+play_dict_cache = {}
 
 
-# dict for dynamic programming
-play_dict = {}
-cache_hit = 0
-
-# returns the min cost for the game state
 def play(game_map: Tuple[Node]):
-    global cache_hit
-    # find entry in the dict and return it's cost
-    inp_hash = hash(game_map)
-    if inp_hash in play_dict:
-        cache_hit += 1
-        return play_dict[inp_hash]
+    """
+    Returns the minimum cost to complete the game from the provided state in game_map
+    """
+    input_hash = hash(game_map)  # find entry in the dict and return it's cost
+    if input_hash in play_dict_cache:
+        return play_dict_cache[input_hash]
 
-    if is_won(game_map):  # Base case
+    if is_won(game_map):  # base case (cost from this state is 0)
         return 0
+
     min_cost = inf
 
-    game_map_length = len(game_map)
-
-    for i in range(game_map_length):  # for each node
-
-        node = game_map[i]
-
-        moves = possible_moves(node, game_map)  # hier kommt eine falsche referenz zurück
+    for node in game_map:
+        moves = possible_moves(node, game_map)
         for move in moves:  # for the current game_map
             cost = move.cost * node.get_occupier_cost_multiplier()
 
             # make the move
             node.move(move.target)
 
-            cost = cost + play(game_map)
+            cost += play(game_map)
             if cost < min_cost:
                 min_cost = cost
 
-            # undo the move (maybe really only undo the move and not the whole game)
-            # so that the next move can be made on the original game_map
             move.target.move(node)
 
-    play_dict[inp_hash] = min_cost
+    play_dict_cache[input_hash] = min_cost
     return min_cost
 
 
+game_map = create_game_map()
+populate_map("input.txt", game_map)
+print_map(game_map)
+
 start = time.time()
-
-# results = cProfile.run("play(tuple(game_map))", sort="tottime")
-results = play(tuple(game_map))
-
-# the deepcopys take forever
-print(results)
-print(f"cache hits: {cache_hit}")
-
-
-# # %%
-
-# can_move_to(origin=B4, destination=H1)
-
-# # %%
-# possible_moves(node=B4, game_map=game_map)
-
-
-# # %%
-
-# # A4.occupation = None
-# H1.occupy("A")
-# can_move_to(origin=H1, destination=A4)
-
-# # %%
-# can_move_to(origin=H1, destination=A3)
-# # A3.occupation = None
-
-# %%
+results = play(game_map)
+print("Answer 2:", results)
+end = time.time()
+print(f"took {end - start:.3}s")
