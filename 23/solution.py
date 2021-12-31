@@ -4,6 +4,10 @@ from typing import Tuple
 from math import inf
 
 
+cost_dict = {"A": 1, "B": 10, "C": 100, "D": 1000}
+play_dict_cache = {}
+
+
 class Edge:
     def __init__(self, source: "Node", target: "Node", cost: int = -1):
         self.source = source
@@ -23,8 +27,6 @@ class Edge:
 
 
 class Node:
-    __cost_dict = {"A": 1, "B": 10, "C": 100, "D": 1000}
-
     def __init__(self, name):
         self.name: str = name
         self.type: str = name[0]
@@ -34,9 +36,8 @@ class Node:
         self.is_room = self.type in ["A", "B", "C", "D"]
         self.is_hallway = self.type == "H"
         self.is_top_room = self.order == 4 and self.is_room
-        self.occupy(self.type)  # as default the map is cleared
 
-    def connect(self, node, cost=1):
+    def connect(self, node, cost):
         self.edges.append(Edge(self, node, cost))
         node.edges.append(Edge(node, self, cost))
 
@@ -45,9 +46,7 @@ class Node:
         node.edges.remove(Edge(node, self))
 
     def occupy(self, name):
-        if name == "H":
-            return
-        cost = self.__cost_dict[name]
+        cost = cost_dict[name]
         self.occupation = (name, cost)
 
     def get_occupier_type(self):
@@ -93,51 +92,41 @@ class Move:
 
 
 # fmt: off
-def create_game_map():
-    mp = []
+# Create Rooms
+A1 = Node("A1") ; B1 = Node("B1") ; C1 = Node("C1") ; D1 = Node("D1")
+A2 = Node("A2") ; B2 = Node("B2") ; C2 = Node("C2") ; D2 = Node("D2")
+A3 = Node("A3") ; B3 = Node("B3") ; C3 = Node("C3") ; D3 = Node("D3")
+A4 = Node("A4") ; B4 = Node("B4") ; C4 = Node("C4") ; D4 = Node("D4")
 
-    # Create Rooms
-    for rti, room_type in enumerate(("A", "B", "C", "D")):
-        for room_order in range(1, 5):
-            node = Node(f"{room_type}{room_order}")
-            mp.append(node)
-            if 1 < node.order <= 4:  # [2, 4]
-                mp[rti * 4 + room_order - 2].connect(node)
+# Create Hallways
+H1 = Node("H1") ; H2 = Node("H2") ; H3 = Node("H3") ; H4 = Node("H4") ; H5 = Node("H5") ; H6 = Node("H6") ; H7 = Node("H7")
 
-    #                -7          -6          -5          -4          -3          -2          -1
-    mp.extend((Node("H7"), Node("H6"), Node("H5"), Node("H4"), Node("H3"), Node("H2"), Node("H1")))
+# Connect the Rooms themselves # 1 is the cost
+A1.connect(A2, 1) ; B1.connect(B2, 1) ; C1.connect(C2, 1) ; D1.connect(D2, 1)
+A2.connect(A3, 1) ; B2.connect(B3, 1) ; C2.connect(C3, 1) ; D2.connect(D3, 1)
+A3.connect(A4, 1) ; B3.connect(B4, 1) ; C3.connect(C4, 1) ; D3.connect(D4, 1)
 
-    for i in range(-1, -7, -1):  # connect hallways
-        mp[i].connect(mp[i - 1])  # H1 -> H2 -> H3 -> H4 -> H5 -> H6 -> H7
+# Connect the Hallways
+H1.connect(H2, 1) ; H2.connect(H3, 2) ; H3.connect(H4, 2) ; H4.connect(H5, 2) ; H5.connect(H6, 2) ; H6.connect(H7, 1)
+# Connect the Hallways to the Rooms
+A4.connect(H2, 2) ; A4.connect(H3, 2) ; B4.connect(H3, 2) ; B4.connect(H4, 2) ; C4.connect(H4, 2) ; C4.connect(H5, 2) ; D4.connect(H5, 2) ; D4.connect(H6, 2)
 
-    # Connect the Rooms to the Hallways
-    mp[3].connect(mp[-2], 2); mp[3].connect(mp[-3], 2)
-    mp[7].connect(mp[-3], 2); mp[7].connect(mp[-4], 2)
-    mp[11].connect(mp[-4], 2); mp[11].connect(mp[-5], 2)
-    mp[15].connect(mp[-5], 2); mp[15].connect(mp[-6], 2)
+# occupy the rooms
+#default_occupation
+A2.occupy("A") ; B2.occupy("B") ; C2.occupy("C") ; D2.occupy("D")
+A1.occupy("A") ; B1.occupy("B") ; C1.occupy("C") ; D1.occupy("D")
 
-    return tuple(mp)
+# A4.occupy("D") ; B4.occupy("B") ; C4.occupy("C") ; D4.occupy("C")
+# A3.occupy("D") ; B3.occupy("C") ; C3.occupy("B") ; D3.occupy("A")
+# A2.occupy("D") ; B2.occupy("B") ; C2.occupy("A") ; D2.occupy("C")
+# A1.occupy("D") ; B1.occupy("A") ; C1.occupy("B") ; D1.occupy("A")
+
+A4.occupy("B") ; B4.occupy("C") ; C4.occupy("B") ; D4.occupy("D")
+A3.occupy("A") ; B3.occupy("D") ; C3.occupy("C") ; D3.occupy("A")
+
+# Add all the nodes to a list (game_map)
+game_map = (A1, A2, A3, A4, B1, B2, B3, B4, C1, C2, C3, C4, D1, D2, D3, D4, H1, H2, H3, H4, H5, H6, H7)
 # fmt: on
-
-
-def populate_map(input_file, mapp: Tuple[Node]):
-    with open(input_file, encoding="ASCII") as f:
-        f.readline()  # skip first line
-        f.readline()  # skip second line
-
-        ll = list(filter(None, f.readline().strip().split("#")))
-        mapp[3].occupy(ll[0])
-        mapp[3 + 4].occupy(ll[1])
-        mapp[3 + 4 + 4].occupy(ll[2])
-        mapp[3 + 4 + 4 + 4].occupy(ll[3])
-
-        ll = list(filter(None, f.readline().strip().split("#")))
-        mapp[2].occupy(ll[0])
-        mapp[2 + 4].occupy(ll[1])
-        mapp[2 + 4 + 4].occupy(ll[2])
-        mapp[2 + 4 + 4 + 4].occupy(ll[3])
-
-    return mapp
 
 
 def get_connected_nodes_of_same_type(node: Node) -> list[Node]:
@@ -210,7 +199,7 @@ def print_map(game_map: list[Node]):
 
     print(f"{'#'* 13}\n#{Hh[0]}{Hh[1]} {Hh[2]} {Hh[3]} {Hh[4]} {Hh[5]}{Hh[6]}#")
     print(f"###{Ah[3]}#{Bh[3]}#{Ch[3]}#{Dh[3]}###")
-    for i in range(len(Ah) - 2, -1, -1):
+    for i in range(len(Ah) - 1, 0, -1):
         print(f"  #{Ah[i]}#{Bh[i]}#{Ch[i]}#{Dh[i]}#")
     print(f"  {'#'*9}  \n")
 
@@ -392,9 +381,6 @@ def possible_moves(node: Node, game_map: list[Node]):
     return moves
 
 
-play_dict_cache = {}
-
-
 def play(game_map: Tuple[Node]):
     """
     Returns the minimum cost to complete the game from the provided state in game_map
@@ -426,12 +412,9 @@ def play(game_map: Tuple[Node]):
     return min_cost
 
 
-game_map = create_game_map()
-populate_map("input.txt", game_map)
-print_map(game_map)
-
 start = time.time()
 results = play(game_map)
+
 print("Answer 2:", results)
 end = time.time()
 print(f"took {end - start:.3}s")
