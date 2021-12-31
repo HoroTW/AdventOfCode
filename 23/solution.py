@@ -116,14 +116,6 @@ A4.connect(H2, 2) ; A4.connect(H3, 2) ; B4.connect(H3, 2) ; B4.connect(H4, 2) ; 
 A2.occupy("A") ; B2.occupy("B") ; C2.occupy("C") ; D2.occupy("D")
 A1.occupy("A") ; B1.occupy("B") ; C1.occupy("C") ; D1.occupy("D")
 
-# A4.occupy("D") ; B4.occupy("B") ; C4.occupy("C") ; D4.occupy("C")
-# A3.occupy("D") ; B3.occupy("C") ; C3.occupy("B") ; D3.occupy("A")
-# A2.occupy("D") ; B2.occupy("B") ; C2.occupy("A") ; D2.occupy("C")
-# A1.occupy("D") ; B1.occupy("A") ; C1.occupy("B") ; D1.occupy("A")
-
-A4.occupy("B") ; B4.occupy("C") ; C4.occupy("B") ; D4.occupy("D")
-A3.occupy("A") ; B3.occupy("D") ; C3.occupy("C") ; D3.occupy("A")
-
 # Add all the nodes to a list (game_map)
 game_map = (A1, A2, A3, A4, B1, B2, B3, B4, C1, C2, C3, C4, D1, D2, D3, D4, H1, H2, H3, H4, H5, H6, H7)
 # fmt: on
@@ -412,9 +404,22 @@ def play(game_map: Tuple[Node]):
     return min_cost
 
 
-start = time.time()
-results = play(game_map)
+# fmt: off
+A4.occupy("D") ; B4.occupy("B") ; C4.occupy("C") ; D4.occupy("C")
+A3.occupy("D") ; B3.occupy("A") ; C3.occupy("B") ; D3.occupy("A")
+# fmt: on
 
-print("Answer 2:", results)
-end = time.time()
-print(f"took {end - start:.3}s")
+start = time.time()
+print("Answer 1:", play(game_map))
+print(f"took { time.time() - start:.3}s")
+
+# fmt: off
+A4.occupy("D") ; B4.occupy("B") ; C4.occupy("C") ; D4.occupy("C")
+A3.occupy("D") ; B3.occupy("C") ; C3.occupy("B") ; D3.occupy("A")
+A2.occupy("D") ; B2.occupy("B") ; C2.occupy("A") ; D2.occupy("C")
+A1.occupy("D") ; B1.occupy("A") ; C1.occupy("B") ; D1.occupy("A")
+# fmt: off
+
+start = time.time()
+print("Answer 2:", play(game_map))
+print(f"took { time.time() - start:.3}s")
