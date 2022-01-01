@@ -1,6 +1,7 @@
 # %%
 import re
 import numpy as np
+import time
 
 
 def clamp(n, smallest, largest):
@@ -81,22 +82,26 @@ def crop(x1, x2, y1, y2, z1, z2, limits):
 
 def solve(instructions):
     cubes = []
-    for (setting, x1, x2, y1, y2, z1, z2) in instructions:
-        x2, y2, z2 = x2 + 1, y2 + 1, z2 + 1
+    for (c_setting, cur_x1, cur_x2, cur_y1, cur_y2, cur_z1, cur_z2) in instructions:
+        cur_x2, cur_y2, cur_z2 = cur_x2 + 1, cur_y2 + 1, cur_z2 + 1
 
-        if empty(x1, x2, y1, y2, z1, z2):  # this should not happen
+        if empty(cur_x1, cur_x2, cur_y1, cur_y2, cur_z1, cur_z2):  # this should not happen
             print("empty")  # and it doesn't - but just in case
             continue
 
-        for another in cubes:
-            another.subtract(x1, x2, y1, y2, z1, z2)  # remove cube from all other cubes
+        for cube in cubes:
+            cube.subtract(cur_x1, cur_x2, cur_y1, cur_y2, cur_z1, cur_z2)  # remove cube from all other cubes
 
-        if setting:  # on --> readd the cube volume
-            cubes.append(Cube(x1, x2, y1, y2, z1, z2))
+        if c_setting:  # on --> read the cube volume
+            cubes.append(Cube(cur_x1, cur_x2, cur_y1, cur_y2, cur_z1, cur_z2))
 
     return sum(cube.volume() for cube in cubes)
 
 
 instructions = get_instructions("input.txt")
+
+start = time.time()
 print("Answer 2:", solve(instructions))
+print("Time:", (time.time() - start) * 1000, "ms")
 # this became a bit uglier than I thought ^^ --- but it works!... for now that is enough for me
+# I should combinde the coordinates to a tuple
