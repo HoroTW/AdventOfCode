@@ -1,3 +1,7 @@
+from itertools import chain
+import itertools
+
+
 def permute(coords):
     x, y, z = coords
     return [
@@ -48,8 +52,7 @@ def match(coords_a, beacon, max_in_common_threshold=12):
         for i, coord_a in enumerate(coords_a):
             for beacon_coord in beacon_coords[i:]:
                 delta = multi_dif(coord_a, beacon_coord)
-                if commons(coords_a, beacon_coords, delta) >= max_in_common_threshold:
-                    # chaka this could be one
+                if commons(coords_a, beacon_coords, delta) >= max_in_common_threshold:  # found a match
                     delta_array = []
                     for beacon_coord in beacon_coords:
                         delta_array.append(multi_sum(beacon_coord, delta))
@@ -61,31 +64,53 @@ def commons(a, b, delta):
     s = set()
     for i in a:
         s.add(i)
-    for j in b:
-        s.add(multi_sum(j, delta))
+    for i in b:
+        s.add(multi_sum(i, delta))
     return len(a) + len(b) - len(s)
+
+
+def find_matches(scanners):
+    detected = [scanners.pop()]
+    deltas = []
+
+    while scanners:
+        print(len(scanners))
+        for i, s2 in enumerate(scanners):
+            for s1 in detected:
+                vals = match(s1, s2)
+                if vals is not None:
+                    matched, delta = vals
+                    detected.append(matched)
+                    deltas.append(delta)
+                    scanners.pop(i)
+                    break
+            else:  # no break - continue only when no value was found
+                continue
+            break
+    return detected, deltas
+
+
+def manhatten_distance(tuple1, tuple2):
+    return sum(abs(a - b) for a, b in zip(tuple1, tuple2))
 
 
 with open("input.txt", encoding="ASCII") as f:
     scanners = []
     for single_scanner_readings in f.read().split("\n\n"):
         scanner = []
-        for sc_line in single_scanner_readings.split("\n")[1:]:
+        for sc_line in single_scanner_readings.split("\n")[1:]:  # skip scanner id
             scanner.append(tuple(int(val) for val in sc_line.split(",")))
         scanners.append(scanner)
 
-print(scanners[:2])
-print()
-single_scanner = scanners[0]
-print(list(all_possible_orientations(single_scanner)))
+detected, deltas = find_matches(scanners)
+print("Answer 1:", len(set(chain.from_iterable(detected))))
 
-print()
-single_scanner_orientations = list(all_possible_orientations(single_scanner))
-print(single_scanner)
-print(single_scanner_orientations)
-print()
+deltas.append((0, 0, 0))  # insert the first scanner position (it's the relative map origin)
+all_possible_scanner_combinations = itertools.combinations(deltas, 2)
+max_manhatten_distance = -1
 
-for i, scanner in enumerate(scanners[1:]):
-    print(f"checking scanner {0} against scanner {i+1}")
-    if match(scanners[0], scanner):
-        print(f"match found for first scanner with {i + 1}. scanner")
+for d1, d2 in all_possible_scanner_combinations:
+    max_manhatten_distance = max(max_manhatten_distance, manhatten_distance(d1, d2))
+
+assert max_manhatten_distance > -1, "no distance could be found. No matches?"
+print("Answer 2:", max_manhatten_distance)
